@@ -1,5 +1,5 @@
 ---
-title: "Homerwork 1"
+title: "Homework 1"
 author: "Saagar Hemrajani"
 date: 2023-05-14
 format: 
