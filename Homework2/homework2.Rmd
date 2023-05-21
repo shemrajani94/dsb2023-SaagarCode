@@ -52,7 +52,7 @@ glimpse(mass_shootings)
 ```
 
 | column(variable)     | description                                                                 |
-|------------------|------------------------------------------------------|
+|----------------------|-----------------------------------------------------------------------------|
 | case                 | short name of incident                                                      |
 | year, month, day     | year, month, day in which the shooting occurred                             |
 | location             | city and state where the shooting occcurred                                 |
@@ -197,15 +197,109 @@ mass_shootings %>%
 -   Are mass shootings with shooters suffering from mental illness different from mass shootings with no signs of mental illness in the shooter?
 
 ```{r}
+mass_shootings %>%
+  mutate(fatality_ratio = fatalities/total_victims) %>%
+  ggplot(aes(x = prior_mental_illness, y = fatality_ratio)) +
+  geom_boxplot() +
+  labs(title = "Fatality ratios (Fatalities/Total Victims) are more concentrated\namongst those without prior mental illness sign",
+       x = "Prior Mental Illness",
+       y = "Fatality Ratio",
+       subtitle = "Suggests that those without prior mental illness signs\ncould have a more methodological approach to their crime") +
+  scale_fill_manual(values = c("blue", "red", "gray"), 
+                    labels = c("Yes", "No", "Unknown")) +
+  ggthemes::theme_economist() + 
+  theme(plot.title = element_text(size = 14))  # Adjust the size value as needed
 
+
+mass_shootings %>%
+  mutate(race = fct_infreq(race)) %>%
+  group_by(race, prior_mental_illness) %>% 
+  summarise(avg_age = mean(age_of_shooter, na.rm = TRUE)) %>% 
+  ggplot(aes(x = race, y = avg_age, fill = prior_mental_illness)) +
+  geom_tile(stat = "identity", position = "dodge") +
+  labs(title = "For black mass shooters, those with prior mental health\nillness signs tend to be older than those without",
+       x = "Race",
+       y = "Average Age",
+       subtitle = "White mass shooters tend to be a similar age\nregardless of whether they have had prior mental illness signs") +
+  scale_fill_manual(values = c("blue", "red", "gray"), 
+                    labels = c("Yes", "No", "Unknown")) +
+  ggthemes::theme_economist() + 
+  theme(plot.title = element_text(size = 14))  # Adjust the size value as needed
 ```
 
 -   Assess the relationship between mental illness and total victims, mental illness and location type, and the intersection of all three variables.
 
 ```{r}
 
+mass_shootings %>%
+  ggplot(aes(x = prior_mental_illness, y = total_victims)) +
+  coord_cartesian(ylim = c(quantile(mass_shootings$total_victims, 0.05), quantile(mass_shootings$total_victims, 0.95))) +
+  geom_boxplot() +
+  labs(title = "Total victims tend to be higher for shooters with\nprior mental illness signs",
+       x = "Prior Mental Illness",
+       y = "Total Victim Count",
+       subtitle = "Total victim count also tends to be more volatile") +
+  scale_fill_manual(values = c("blue", "red", "gray"), 
+                    labels = c("Yes", "No", "Unknown")) +
+  ggthemes::theme_economist() + 
+  theme(plot.title = element_text(size = 14))  # Adjust the size value as needed
+
+
+mass_shootings %>%
+  mutate(location_type = fct_infreq(location_type)) %>%
+  group_by(prior_mental_illness, location_type) %>%
+  summarize(count = n()) %>% 
+  ggplot(aes(x = location_type, y = count, fill = prior_mental_illness)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Workspaces and Schools are common location_types for\n mass shooters with and without mental illness signs",
+       x = "Location Type",
+       y = "Frequency",
+       subtitle = "Mass shooters who chose military, reglious or airports\ndidnt have prior signs of mental illness") +
+  scale_fill_manual(values = c("blue", "red", "gray"), 
+                    labels = c("Yes", "No", "Unknown")) +
+  ggthemes::theme_economist() + 
+  theme(plot.title = element_text(size = 14))  # Adjust the size value as needed
+
+
+
+mass_shootings %>%
+    mutate(location_type = ifelse(is.na(location_type), "Unknown", location_type)) %>% 
+  # Restrict Location Type to only workplace school or other
+  mutate(location_type = case_when(
+    location_type %in% c("Workplace", "School") ~ as.character(location_type),
+    TRUE ~ "Other"
+  )) %>%
+  mutate(location_type = fct_rev(fct_infreq(location_type))) %>%
+  group_by(prior_mental_illness, location_type) %>%
+  summarize(avg_victim_count = median(total_victims, na.rm = TRUE)) %>% 
+  ggplot(aes(x = prior_mental_illness , y = avg_victim_count, fill = location_type)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Mass shootings at schools have the highest median victim counts",
+       x = "Prior Mental Illness",
+       y = "Total Victims (Median)",
+       subtitle = "This trend is more pronounced amongst those with prior mental health illness") +
+  ggthemes::theme_economist() + 
+  theme(plot.title = element_text(size = 14))  # Adjust the size value as needed
 ```
 
+```{=html}
+<span style="color:red">
+<ul>
+  <li>
+    <p>It is clear that those with prior signs of mental illness have a more volatility in total victim and fatality ratios in their shootings. This may be because the crimes are less pre-planned.</p>
+  </li>
+  <li>
+    <p>Workplaces and schools tend to be the most populated locations for mass shooters regardless of their mental health illness status. Interestingly, mass shooters who have committed their crimes in Military or Airport facilities have not had prior mental illness signs. This may be because of the higher security clearance needed to work in these locations.</p>
+  </li>
+  <li>
+    <p>Despite schools being less common mass shooting locations than workplaces or others, they tend to have a higher median number of total victims. This discrepancy tends to be higher in shooters with prior mental health illness.</p>
+  </li>
+  <li>
+    <p>In general, black mass shooters tend to be older than white mass shooters. For white mass shooters, those with prior mental illness tend to be younger than those without. For black and Latino mass shooters, those with prior mental illness tend to be older.</p>
+  </li>
+</ul>
+</span>
+```
 Make sure to provide a couple of sentences of written interpretation of your tables/figures. Graphs and tables alone will not be sufficient to answer this question.
 
 # Exploring credit card fraud
