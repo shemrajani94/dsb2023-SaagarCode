@@ -52,7 +52,7 @@ glimpse(mass_shootings)
 ```
 
 | column(variable)     | description                                                                 |
-|----------------------|-----------------------------------------------------------------------------|
+|-------------------|-----------------------------------------------------|
 | case                 | short name of incident                                                      |
 | year, month, day     | year, month, day in which the shooting occurred                             |
 | location             | city and state where the shooting occcurred                                 |
@@ -347,35 +347,138 @@ The data dictionary is as follows
 
 ```{r}
 
+card_fraud %>%
+  group_by(trans_year, is_fraud) %>%
+  count() %>%
+  group_by(trans_year) %>% 
+  mutate(Percentage = n / sum(n) * 100) %>%  
+  filter(is_fraud == 1)
+
+## 0.57% were fraud in 2019 (2721 Transactions)
+## 0.63% in 2020 (1215 Transactions)
 ```
 
 -   How much money (in US\$ terms) are fraudulent transactions costing the company? Generate a table that summarizes the total amount of legitimate and fraudulent transactions per year and calculate the % of fraudulent transactions, in US\$ terms.
 
 ```{r}
 
+card_fraud %>%
+  group_by(trans_year, is_fraud) %>%
+  summarise(total_usd_amt = sum(amt)) %>%
+  group_by(trans_year) %>% 
+  mutate(pct_total_usd_amt = total_usd_amt / sum(total_usd_amt) * 100) %>%  
+  filter(is_fraud == 1)
+
+## In terms of total USD amount, fraudulent transactions represent 
+## a higher proportion of total transactions 4.2% in 2019, 4.8% in 2020
 ```
 
 -   Generate a histogram that shows the distribution of amounts charged to credit card, both for legitimate and fraudulent accounts. Also, for both types of transactions, calculate some quick summary statistics.
 
 ```{r}
-
+card_fraud %>% 
+  mutate(is_fraud = ifelse(is_fraud == 1, "Yes", "No")) %>% 
+  ggplot(aes(x = amt, fill = is_fraud)) +
+  geom_density(alpha = 0.6) +
+  scale_fill_manual(values = c("blue", "green"),
+                  guide = guide_legend(override.aes = list(alpha = 1))) +
+  labs(x = "Amount USD", y='Density', subtitle = "") +
+  coord_cartesian(xlim = c(quantile(card_fraud$amt, 0.00), quantile(card_fraud$amt, 0.99))) +
+  ggtitle('Similarly with Latino') +
+  ggthemes::theme_economist() + 
+  theme(plot.title = element_text(size = 10)) +  # Adjust the size value as needed
+  scale_x_continuous(breaks = round(seq(min(card_fraud$amt), quantile(card_fraud$amt, 0.99), length.out = 20), digits = 0)
+)
 ```
 
 -   What types of purchases are most likely to be instances of fraud? Consider category of merchants and produce a bar chart that shows % of total fraudulent transactions sorted in order.
 
 ```{r}
+num_fraud <- card_fraud %>%
+  filter(is_fraud == 1) %>%
+  count() %>% 
+  pull(n)
+
+card_fraud %>%
+  filter(is_fraud == 1 & !is.na(category)) %>%
+  mutate(category = fct_infreq(category)) %>%
+  group_by(category) %>%
+  summarize(pct_fraud_transactions = n() / num_fraud * 100) %>%  
+  ggplot(aes(x = category, y = pct_fraud_transactions)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Groceries ands Online Shopping are\nthe most common fraudulent transactions categories",
+       x = "",
+       y = "Percentage of Fradulent Transactions",
+       subtitle = "") +
+  ggthemes::theme_economist() + 
+  theme(plot.title = element_text(size = 14),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.85))  # Adjust the size value as needed
+
+  ntheme()
 
 ```
 
 -   When is fraud more prevalent? Which days, months, hours? To create new variables to help you in your analysis, we use the `lubridate` package and the following code
 
-```         
-mutate(
-  date_only = lubridate::date(trans_date_trans_time),
-  month_name = lubridate::month(trans_date_trans_time, label=TRUE),
-  hour = lubridate::hour(trans_date_trans_time),
-  weekday = lubridate::wday(trans_date_trans_time, label = TRUE)
-  )
+```{r}
+
+card_fraud_date <- card_fraud %>% 
+                  mutate(
+                    date_only = lubridate::date(trans_date_trans_time),
+                    month_name = lubridate::month(trans_date_trans_time, label=TRUE),
+                    month_number = month(date(trans_date_trans_time)),
+                    hour = lubridate::hour(trans_date_trans_time),
+                    weekday = lubridate::wday(trans_date_trans_time, label = TRUE),
+                    weekday_num = lubridate::wday(trans_date_trans_time, label = FALSE)
+                    )
+
+card_fraud_date %>%
+  filter(is_fraud == 1 & !is.na(month_name)) %>%
+  mutate(month_name = fct_reorder(month_name, month_number, max)) %>%
+  group_by(month_name, month_number) %>%
+  summarize(pct_fraud_transactions = n() / num_fraud * 100) %>%  
+  ggplot(aes(x = month_name, y = pct_fraud_transactions)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Fraud is more likely to occur in the first half of the year than the second",
+       x = "",
+       y = "Percentage of Fradulent Transactions",
+       subtitle = "With march and may having\nhighest percentage of fraudulent transactions") +
+  ggthemes::theme_economist() + 
+  theme(plot.title = element_text(size = 14),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.85))
+
+
+card_fraud_date %>%
+  filter(is_fraud == 1 & !is.na(hour)) %>%
+  arrange(hour) %>% 
+  group_by(hour) %>%
+  summarize(pct_fraud_transactions = n() / num_fraud * 100) %>%  
+  ggplot(aes(x = hour, y = pct_fraud_transactions)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_x_continuous(breaks = seq(0, 23, by = 1)) +
+  labs(title = "A lot of the fraudulent transactions occur just before midnight\nor in the late hours of the night",
+       x = "Hour",
+       y = "Percentage of Fradulent Transactions",
+       subtitle = "11pm to midnight is the most common time for fraudulent transactions to occur") +
+  ggthemes::theme_economist() + 
+  theme(plot.title = element_text(size = 14),
+        axis.text.x = element_text(hjust = 0.5, vjust = 0.85))
+
+
+card_fraud_date %>%
+  filter(is_fraud == 1 & !is.na(weekday)) %>%
+  mutate(weekday = fct_reorder(weekday, weekday_num, max)) %>%
+  group_by(weekday, weekday_num) %>%
+  summarize(pct_fraud_transactions = n() / num_fraud * 100) %>%  
+  ggplot(aes(x = weekday, y = pct_fraud_transactions)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "The weekends and monday are the most likely days for fraud",
+       x = "",
+       y = "Percentage of Fradulent Transactions",
+       subtitle = "Wednesday is the least likely day") +
+  ggthemes::theme_economist() + 
+  theme(plot.title = element_text(size = 14),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.85))
 ```
 
 -   Are older customers significantly more likely to be victims of credit card fraud? To calculate a customer's age, we use the `lubridate` package and the following code
@@ -387,7 +490,23 @@ mutate(
 ```
 
 ```{r}
+card_fraud_dob <- card_fraud %>% 
+                   mutate(
+                  age = interval(dob, trans_date_trans_time) / years(1),)
 
+card_fraud_dob %>%
+  filter(is_fraud == 1) %>%
+  arrange(age) %>% 
+  ggplot(aes(x = age)) +
+  geom_histogram(alpha=0.6, bins=60) +
+  labs(title = "People in their 20s and Late 40s-60s\nare most likely to be victims of fraud",
+       x = "Age",
+       y = "Number of Fradulent Transactions",
+       subtitle = "People in their 30s tend to be most shrewd") +
+  ggthemes::theme_economist() + 
+  theme(plot.title = element_text(size = 14),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.85)) +
+  scale_x_continuous(breaks = seq(round(min(card_fraud_dob$age), digits=0), round(max(card_fraud_dob$age), digits=0), by = 3))
 ```
 
 -   Is fraud related to distance? The distance between a card holder's home and the location of the transaction can be a feature that is related to fraud. To calculate distance, we need the latidue/longitude of card holders's home and the latitude/longitude of the transaction, and we will use the [Haversine formula](https://en.wikipedia.org/wiki/Haversine_formula) to calculate distance. I adapted code to [calculate distance between two points on earth](https://www.geeksforgeeks.org/program-distance-two-points-earth/amp/) which you can find below
@@ -413,6 +532,17 @@ card_fraud <- card_fraud %>%
     distance_km = 6377.830272 * acos((sin(lat1_radians) * sin(lat2_radians)) + cos(lat1_radians) * cos(lat2_radians) * cos(long2_radians - long1_radians))
 
   )
+
+
+card_fraud %>%
+  mutate(is_fraud = ifelse(is_fraud == 1, "Yes", "No")) %>% 
+  ggplot(aes(x = is_fraud, y = distance_miles)) +
+  geom_boxplot() +
+  labs(x = "Is Fraud", y = "Distance (Miles)") +
+  labs(title = "There doesnt see to be much distinction between\ntransaction distances between fraud and non fraudulent transaction",
+     x = "Age",
+     y = "Number of Fradulent Transactions",
+     subtitle = "This means that most fradulent transactions\nare made the same distanes away from the cardholders home")
 
 ```
 
