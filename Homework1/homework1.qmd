@@ -28,12 +28,14 @@ options(dplyr.summarise.inform = FALSE)
 
 ## Problem 1: Use logical operators to find flights that:
 
-    -   Had an arrival delay of two or more hours (\> 120 minutes)
-    -   Flew to Houston (IAH or HOU)
-    -   Were operated by United (`UA`), American (`AA`), or Delta (`DL`)
-    -   Departed in summer (July, August, and September)
-    -   Arrived more than two hours late, but didn't leave late
-    -   Were delayed by at least an hour, but made up over 30 minutes in flight
+```         
+-   Had an arrival delay of two or more hours (\> 120 minutes)
+-   Flew to Houston (IAH or HOU)
+-   Were operated by United (`UA`), American (`AA`), or Delta (`DL`)
+-   Departed in summer (July, August, and September)
+-   Arrived more than two hours late, but didn't leave late
+-   Were delayed by at least an hour, but made up over 30 minutes in flight
+```
 
 ```{r}
 #| label: problem-1
@@ -127,9 +129,11 @@ flights %>%
 
 ## Problem 4: The `nycflights13` package includes a table (`weather`) that describes the weather during 2013. Use that table to answer the following questions:
 
-    -   What is the distribution of temperature (`temp`) in July 2013? Identify any important outliers in terms of the `wind_speed` variable.
-    -   What is the relationship between `dewp` and `humid`?
-    -   What is the relationship between `precip` and `visib`?
+```         
+-   What is the distribution of temperature (`temp`) in July 2013? Identify any important outliers in terms of the `wind_speed` variable.
+-   What is the relationship between `dewp` and `humid`?
+-   What is the relationship between `precip` and `visib`?
+```
 
 ```{r}
 
@@ -186,9 +190,11 @@ plot(scatter_precip_visib)
 
 ## Problem 5: Use the `flights` and `planes` tables to answer the following questions:
 
-    -   How many planes have a missing date of manufacture?
-    -   What are the five most common manufacturers?
-    -   Has the distribution of manufacturer changed over time as reflected by the airplanes flying from NYC in 2013? (Hint: you may need to use case_when() to recode the manufacturer name and collapse rare vendors into a category called Other.)
+```         
+-   How many planes have a missing date of manufacture?
+-   What are the five most common manufacturers?
+-   Has the distribution of manufacturer changed over time as reflected by the airplanes flying from NYC in 2013? (Hint: you may need to use case_when() to recode the manufacturer name and collapse rare vendors into a category called Other.)
+```
 
 ```{r}
 # Filter all planes where year of manufacture is NA 
@@ -260,8 +266,10 @@ plot(stacked_column_manufacturer_prop)
 
 ## Problem 6: Use the `flights` and `planes` tables to answer the following questions:
 
-    -   What is the oldest plane (specified by the tailnum variable) that flew from New York City airports in 2013?
-    -   How many airplanes that flew from New York City are included in the planes table?
+```         
+-   What is the oldest plane (specified by the tailnum variable) that flew from New York City airports in 2013?
+-   How many airplanes that flew from New York City are included in the planes table?
+```
 
 ```{r}
 #Assuming that only JFK and LaGuardia qualify as new york airports
@@ -300,8 +308,10 @@ print(num_planes_nyc_2013) # 2880 Planes in planes db, flew from NYC
 
 ## Problem 7: Use the `nycflights13` to answer the following questions:
 
-    -   What is the median arrival delay on a month-by-month basis in each airport?
-    -   For each airline, plot the median arrival delay for each month and origin airport.
+```         
+-   What is the median arrival delay on a month-by-month basis in each airport?
+-   For each airline, plot the median arrival delay for each month and origin airport.
+```
 
 ```{r}
 # Median Arrival Delay  
@@ -433,6 +443,7 @@ cancellations <- flights %>%
   # a cancelled flight is one with no `dep_time` 
   filter(is.na(dep_time))
 ```
+
 ![](images/sfo-cancellations.png)
 
 ```{=html}
@@ -448,8 +459,8 @@ To create the following plot, we would organize our data manipulation in the fol
 </ol>
 </span>
 ```
-
 ## Problem 10: On your own -- Hollywood Age Gap
+
 ```{r}
 
 age_gaps <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-02-14/age_gaps.csv', show_col_types = FALSE)
@@ -553,10 +564,11 @@ percentage_table <- age_gaps %>%
 
 scale_x_yr <- seq(min(percentage_table$release_year), max(percentage_table$release_year), by = 3)
 
+# Bar plot of percentage of films with same gender love interests
 same_gender_love_interests_plot <- ggplot(percentage_table, aes(x = release_year, y = percentage)) +
   geom_bar(stat = "identity", fill = "steelblue") +
   labs(x = "Release Year", y = "Percentage of Films with Same Gender Love Interests") +
-  ggtitle("Percentage of Movies with Same Gender Love Interests by Year") +
+  ggtitle("Same Gender Love Interests are more frequently represented in movies") +
   scale_x_continuous(
     breaks = scale_x_yr,
     labels = substring(scale_x_yr, nchar(scale_x_yr) - 1)
@@ -565,10 +577,10 @@ same_gender_love_interests_plot <- ggplot(percentage_table, aes(x = release_year
 
 plot(same_gender_love_interests_plot)
 ```
+
 -   The `half plus seven\` rule. Large age disparities in relationships carry certain stigmas. One popular rule of thumb is the [half-your-age-plus-seven](https://en.wikipedia.org/wiki/Age_disparity_in_sexual_relationships#The_.22half-your-age-plus-seven.22_rule) rule. This rule states you should never date anyone under half your age plus seven, establishing a minimum boundary on whom one can date. In order for a dating relationship to be acceptable under this rule, your partner's age must be:
 
-$$\frac{\text{Your age}}{2} + 7 < \text{Partner Age} < (\text{Your age} - 7) * 2$$ 
-# Details
+$$\frac{\text{Your age}}{2} + 7 < \text{Partner Age} < (\text{Your age} - 7) * 2$$ \# Details
 
 -   Who did you collaborate with: Brent Lewis
 -   Approximately how much time did you spend on this problem set: 5-7 hours. It took a long time.
