@@ -28,6 +28,10 @@ library(skimr)
 library(countrycode)
 library(here)
 library(ggthemes)
+library(scales)
+library(patchwork)
+options(dplyr.summarise.inform = FALSE)
+
 ```
 
 # Data Visualisation - Exploration
@@ -51,20 +55,33 @@ mass_shootings <- read_csv(here::here("data", "mass_shootings.csv"))
 glimpse(mass_shootings)
 ```
 
++----------------------+-----------------------------------------------------------------------------+
 | column(variable)     | description                                                                 |
-|-------------------|-----------------------------------------------------|
++======================+=============================================================================+
 | case                 | short name of incident                                                      |
++----------------------+-----------------------------------------------------------------------------+
 | year, month, day     | year, month, day in which the shooting occurred                             |
++----------------------+-----------------------------------------------------------------------------+
 | location             | city and state where the shooting occcurred                                 |
++----------------------+-----------------------------------------------------------------------------+
 | summary              | brief description of the incident                                           |
++----------------------+-----------------------------------------------------------------------------+
 | fatalities           | Number of fatalities in the incident, excluding the shooter                 |
++----------------------+-----------------------------------------------------------------------------+
 | injured              | Number of injured, non-fatal victims in the incident, excluding the shooter |
++----------------------+-----------------------------------------------------------------------------+
 | total_victims        | number of total victims in the incident, excluding the shooter              |
++----------------------+-----------------------------------------------------------------------------+
 | location_type        | generic location in which the shooting took place                           |
++----------------------+-----------------------------------------------------------------------------+
 | male                 | logical value, indicating whether the shooter was male                      |
++----------------------+-----------------------------------------------------------------------------+
 | age_of_shooter       | age of the shooter when the incident occured                                |
++----------------------+-----------------------------------------------------------------------------+
 | race                 | race of the shooter                                                         |
++----------------------+-----------------------------------------------------------------------------+
 | prior_mental_illness | did the shooter show evidence of mental illness prior to the incident?      |
++----------------------+-----------------------------------------------------------------------------+
 
 ## Explore the data
 
@@ -114,7 +131,6 @@ mass_shootings %>%
 -   Redraw the same plot, but remove the Las Vegas Strip massacre from the dataset.
 
 ```{r}
-{r}
 mass_shootings %>%
   filter(case != 'Las Vegas Strip massacre') %>% 
   ggplot(aes(x = location_type, y = total_victims)) +
@@ -205,8 +221,6 @@ mass_shootings %>%
        x = "Prior Mental Illness",
        y = "Fatality Ratio",
        subtitle = "Suggests that those without prior mental illness signs\ncould have a more methodological approach to their crime") +
-  scale_fill_manual(values = c("blue", "red", "gray"), 
-                    labels = c("Yes", "No", "Unknown")) +
   ggthemes::theme_economist() + 
   theme(plot.title = element_text(size = 14))  # Adjust the size value as needed
 
@@ -217,11 +231,12 @@ mass_shootings %>%
   summarise(avg_age = mean(age_of_shooter, na.rm = TRUE)) %>% 
   ggplot(aes(x = race, y = avg_age, fill = prior_mental_illness)) +
   geom_tile(stat = "identity", position = "dodge") +
-  labs(title = "For black mass shooters, those with prior mental health\nillness signs tend to be older than those without",
+  labs(title = "For black mass shooters, those with prior mental health\nillness signs tend to be younger than those without",
        x = "Race",
        y = "Average Age",
        subtitle = "White mass shooters tend to be a similar age\nregardless of whether they have had prior mental illness signs") +
   scale_fill_manual(values = c("blue", "red", "gray"), 
+                    limits = c("Yes", "No", NA),
                     labels = c("Yes", "No", "Unknown")) +
   ggthemes::theme_economist() + 
   theme(plot.title = element_text(size = 14))  # Adjust the size value as needed
@@ -239,8 +254,6 @@ mass_shootings %>%
        x = "Prior Mental Illness",
        y = "Total Victim Count",
        subtitle = "Total victim count also tends to be more volatile") +
-  scale_fill_manual(values = c("blue", "red", "gray"), 
-                    labels = c("Yes", "No", "Unknown")) +
   ggthemes::theme_economist() + 
   theme(plot.title = element_text(size = 14))  # Adjust the size value as needed
 
@@ -254,8 +267,9 @@ mass_shootings %>%
   labs(title = "Workspaces and Schools are common location_types for\n mass shooters with and without mental illness signs",
        x = "Location Type",
        y = "Frequency",
-       subtitle = "Mass shooters who chose military, reglious or airports\ndidnt have prior signs of mental illness") +
+       subtitle = "Mass shooters who chose military, reglious or airports\nall had prior signs of mental illness") +
   scale_fill_manual(values = c("blue", "red", "gray"), 
+                    limits = c("Yes", "No", NA),
                     labels = c("Yes", "No", "Unknown")) +
   ggthemes::theme_economist() + 
   theme(plot.title = element_text(size = 14))  # Adjust the size value as needed
@@ -289,13 +303,13 @@ mass_shootings %>%
     <p>It is clear that those with prior signs of mental illness have a more volatility in total victim and fatality ratios in their shootings. This may be because the crimes are less pre-planned.</p>
   </li>
   <li>
-    <p>Workplaces and schools tend to be the most populated locations for mass shooters regardless of their mental health illness status. Interestingly, mass shooters who have committed their crimes in Military or Airport facilities have not had prior mental illness signs. This may be because of the higher security clearance needed to work in these locations.</p>
+    <p>Workplaces and schools tend to be the most populated locations for mass shooters regardless of their mental health illness status. Interestingly, mass shooters who have committed their crimes in Military or Airport facilities all had prior mental illness signs. This is probably because people working in these in these locations would have to go through more background checks.</p>
   </li>
   <li>
     <p>Despite schools being less common mass shooting locations than workplaces or others, they tend to have a higher median number of total victims. This discrepancy tends to be higher in shooters with prior mental health illness.</p>
   </li>
   <li>
-    <p>In general, black mass shooters tend to be older than white mass shooters. For white mass shooters, those with prior mental illness tend to be younger than those without. For black and Latino mass shooters, those with prior mental illness tend to be older.</p>
+    <p>In general, black mass shooters tend to be older than white mass shooters. For white mass shooters, those with prior mental illness tend to be older than those without. For black and Latino mass shooters, those with prior mental illness tend to be younger</p>
   </li>
 </ul>
 </span>
@@ -413,9 +427,6 @@ card_fraud %>%
   ggthemes::theme_economist() + 
   theme(plot.title = element_text(size = 14),
         axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.85))  # Adjust the size value as needed
-
-  ntheme()
-
 ```
 
 -   When is fraud more prevalent? Which days, months, hours? To create new variables to help you in your analysis, we use the `lubridate` package and the following code
@@ -483,11 +494,11 @@ card_fraud_date %>%
 
 -   Are older customers significantly more likely to be victims of credit card fraud? To calculate a customer's age, we use the `lubridate` package and the following code
 
-```         
-  mutate(
-   age = interval(dob, trans_date_trans_time) / years(1),
-    )
-```
+<!-- -->
+
+      mutate(
+       age = interval(dob, trans_date_trans_time) / years(1),
+        )
 
 ```{r}
 card_fraud_dob <- card_fraud %>% 
@@ -550,20 +561,6 @@ Plot a boxplot or a violin plot that looks at the relationship of distance and `
 
 # Exploring sources of electricity production, CO2 emissions, and GDP per capita.
 
-There are many sources of data on how countries generate their electricity and their CO2 emissions. I would like you to create three graphs:
-
-## 1. A stacked area chart that shows how your own country generated its electricity since 2000.
-
-You will use
-
-`geom_area(colour="grey90", alpha = 0.5, position = "fill")`
-
-## 2. A scatter plot that looks at how CO2 per capita and GDP per capita are related
-
-## 3. A scatter plot that looks at how electricity usage (kWh) per capita/day GDP per capita are related
-
-We will get energy data from the Our World in Data website, and CO2 and GDP per capita emissions from the World Bank, using the `wbstats`package.
-
 ```{r}
 #| message: false
 #| warning: false
@@ -618,37 +615,209 @@ gdp_percap <- wb_data(country = "countries_only",
          GDPpercap = value)
 ```
 
-Specific questions:
+There are many sources of data on how countries generate their electricity and their CO2 emissions. I would like you to create three graphs:
 
-1.  How would you turn `energy` to long, tidy format?
-2.  You may need to join these data frames
-    -   Use `left_join` from `dplyr` to [join the tables](http://r4ds.had.co.nz/relational-data.html)
-    -   To complete the merge, you need a unique *key* to match observations between the data frames. Country names may not be consistent among the three dataframes, so please use the 3-digit ISO code for each country
-    -   An aside: There is a great package called [`countrycode`](https://github.com/vincentarelbundock/countrycode) that helps solve the problem of inconsistent country names (Is it UK? United Kingdom? Great Britain?). `countrycode()` takes as an input a country's name in a specific format and outputs it using whatever format you specify.
-3.  Write a function that takes as input any country's name and returns all three graphs. You can use the `patchwork` package to arrange the three graphs as shown below
+## 1. A stacked area chart that shows how your own country generated its electricity since 2000.
 
-```{r, echo=FALSE, out.width="100%"}
-knitr::include_graphics(here::here("images", "electricity-co2-gdp.png"), error = FALSE)
+```{r}
+#| message: false
+#| warning: false
+
+energy %>% 
+  filter(country == 'Netherlands' & year >= 2000) %>% 
+  pivot_longer(cols = biofuel:wind, names_to = "fuel", values_to = "twh_generation") %>% 
+  select(c('country', 'year','fuel', 'twh_generation')) %>% 
+  mutate(twh_generation = ifelse(is.na(twh_generation), 0.0, twh_generation)) %>% 
+  ggplot(aes(x = year, y = twh_generation, fill = fuel)) +
+  geom_area(colour="grey90", alpha = 0.6, position = "fill") +
+  labs(x = "Year", y = "Percentage Generation", fill = "Fuel", 
+       title='Wind generation in Netherlands has accelerated since 2015',
+       subtitle='However, gas is still the main source of electricity generation') +
+  scale_fill_discrete(guide = guide_legend(reverse = TRUE)) +
+  scale_y_continuous(labels = scales::percent)
+
+
 ```
 
-# Deliverables
+## 2. A scatter plot that looks at how CO2 per capita and GDP per capita are related
 
-There is a lot of explanatory text, comments, etc. You do not need these, so delete them and produce a stand-alone document that you could share with someone. Knit the edited and completed R Markdown (qmd) file as a Word or HTML document (use the "Knit" button at the top of the script editor window) and upload it to Canvas. You must be comitting and pushing your changes to your own Github repo as you go along.
+```{r}
+#| message: false
+#| warning: false
+
+correlation_co2_gdp_by_yr <- co2_percap %>% 
+  inner_join(gdp_percap, by=c('iso2c','iso3c', 'country', 'year')) %>% 
+  select(c('iso2c','iso3c', 'country', 'year','GDPpercap', 'co2percap')) %>% 
+  filter(year >= 2000) %>% 
+  group_by(year) %>% 
+  summarize(correlation = round(cor(GDPpercap, co2percap),2))
+
+
+co2_percap %>% 
+  inner_join(gdp_percap, by=c('iso2c','iso3c', 'country', 'year')) %>% 
+  select(c('iso2c','iso3c', 'country', 'year','GDPpercap', 'co2percap')) %>% 
+  filter(year >= 2000) %>% 
+  ggplot(aes(x = GDPpercap, y = co2percap)) +
+  geom_point() +
+  facet_wrap(~ year, ncol = 5) +
+  labs(x = "GDP per capita", y = "CO2 per capita",
+       title = "Global Correlation Co2 per Capita and GDP per Capita (by year)") +
+  theme_bw() +
+  theme(panel.spacing = unit(0.5, "lines")) +
+  geom_smooth(formula = y ~ x, method = "lm", se = FALSE, show.legend= FALSE) +
+  geom_text(
+    aes(label = paste0("Correlation: ", sprintf("%.2f", round(correlation, 2)))), data = correlation_co2_gdp_by_yr,
+    x = Inf, y = Inf,
+    hjust = 1, vjust = 1,
+    size = 3
+  )
+
+
+# There is definitely a positive correlation between GDP and C02 per capita. 
+# However, this correlation has weakend over time. Since 2014, the correlation has been weaker than 0.8
+```
+
+## 3. A scatter plot that looks at how electricity usage (kWh) per capita/day GDP per capita are related
+
+```{r}
+#| message: false
+#| warning: false
+
+correlation_elec_gdp_by_yr <- energy %>% 
+  mutate(iso3c = iso_code) %>% 
+  inner_join(gdp_percap, by=c('iso3c', 'year')) %>% 
+  select(c('iso3c', 'year','GDPpercap', 'per_capita_electricity')) %>% 
+  filter(year >= 2000) %>% 
+  group_by(year) %>% 
+  summarize(correlation = round(cor(GDPpercap, per_capita_electricity, use = "complete.obs"),2))
+
+
+energy %>% 
+  mutate(iso3c = iso_code) %>% 
+  inner_join(gdp_percap, by=c('iso3c', 'year')) %>% 
+  select(c('iso3c', 'year','GDPpercap', 'per_capita_electricity')) %>% 
+  filter(year >= 2000) %>% 
+  left_join(distinct(gdp_percap, iso3c, country, .keep_all = FALSE), by='iso3c') %>% 
+  ggplot(aes(x = GDPpercap, y = per_capita_electricity)) +
+  geom_point() +
+  facet_wrap(~ year, ncol = 5) +
+  labs(x = "GDP per capita", y = "electricity usage (kWh) per capita/day",
+       title = "Global Correlation Electricity Usage and GDP per Capita (by year)") +
+  theme_bw() +
+  theme(panel.spacing = unit(0.5, "lines")) +
+  geom_smooth(formula = y ~ x, method = "lm", se = FALSE, show.legend= FALSE) +
+  geom_text(
+    aes(label = paste0("Correlation: ", sprintf("%.2f", round(correlation, 2)))), data = correlation_elec_gdp_by_yr,
+    x = Inf, y = Inf,
+    hjust = 1, vjust = 1,
+    size = 3
+  ) 
+
+## Electricity consumption per capita and GDP per capita are also positively correlated
+## However, the positive correlation is less strong than GDP and C02
+## Similar to the correlation between GDP and C02, the correlation between gdp and electricity consumption has reduced over time
+## This demonstrates how the largest economies have shifted from manufaturing to technology and services, which are less electricity intensive
+
+```
+
+3.  Write a function that takes as input any country's name and returns all three graphs. You can use the `patchwork` package to arrange the three graphs as shown below
+
+
+```{r}
+#| message: false
+#| warning: false
+
+library(patchwork)
+
+selected_country <- "Netherlands"
+
+generate_and_export_plots <- function(selected_country) {
+  
+  stacked_area_plot <- energy %>% 
+  filter(country == selected_country & year >= 2000) %>% 
+  pivot_longer(cols = biofuel:wind, names_to = "fuel", values_to = "twh_generation") %>% 
+  select(c('country', 'year','fuel', 'twh_generation')) %>% 
+  mutate(twh_generation = ifelse(is.na(twh_generation), 0.0, twh_generation)) %>% 
+  ggplot(aes(x = year, y = twh_generation, fill = fuel)) +
+  geom_area(colour="grey90", alpha = 0.6, position = "fill") +
+  labs(x = "Year", y = "Percentage Generation", fill = "Fuel", 
+       title='Wind generation in Netherlands has accelerated since 2015',
+       subtitle='However, gas is still the main source of electricity generation') +
+  scale_fill_discrete(guide = guide_legend(reverse = TRUE)) +
+  scale_y_continuous(labels = scales::percent)
+
+  
+  
+  gdp_kwh_df <- energy %>% 
+    mutate(iso3c = iso_code) %>% 
+    inner_join(gdp_percap, by=c('iso3c', 'year')) %>% 
+    select(c('iso3c', 'year','GDPpercap', 'per_capita_electricity')) %>% 
+    filter(year >= 2000) %>% 
+    left_join(distinct(gdp_percap, iso3c, country, .keep_all = FALSE), by='iso3c') %>% 
+    filter(country == selected_country) %>% 
+    mutate(year = as.factor(year))
+
+  
+  scatter_1 <- gdp_kwh_df %>% 
+    ggplot(aes(x = GDPpercap, y = per_capita_electricity, color=year)) +
+    geom_point() +
+    labs(x = "GDP per capita", y = "electricity usage (kWh) per capita/day",
+         title = sprintf("Relationshp between Electricity Usage and GDP per capita for\n%s ", selected_country)) +
+    theme_bw() +
+    geom_smooth(formula = y ~ x, method = "lm", se = FALSE, show.legend= FALSE) +
+    geom_text(
+      aes(label = paste0("Correlation: ", round(cor(GDPpercap, per_capita_electricity), 2))),
+      x = Inf, y = Inf,
+      hjust = 1, vjust = 1,
+      size = 5
+    ) +
+    theme(plot.title = element_text(size = 10),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.85))
+  
+  
+  co2_gdp_df <- co2_percap %>% 
+    inner_join(gdp_percap, by=c('iso2c','iso3c', 'country', 'year')) %>% 
+    select(c('iso2c','iso3c', 'country', 'year','GDPpercap', 'co2percap')) %>% 
+    filter(year >= 2000 & country == selected_country) %>% 
+    mutate(year = as.factor(year))
+
+
+  scatter_2 <- co2_gdp_df %>% 
+    ggplot(aes(x = GDPpercap, y = co2percap, color=year)) +
+    geom_point() +
+    labs(x = "GDP per capita", y = "CO2 per capita",
+         title = sprintf("Relationship between CO2 and GDP per capita for\n%s ", selected_country)) +
+    theme_bw() +
+    geom_smooth(formula = y ~ x, method = "lm", se = FALSE, show.legend= FALSE) +
+    geom_text(
+      aes(label = paste0("Correlation: ", round(cor(GDPpercap, co2percap), 2))),
+      x = Inf, y = Inf,
+      hjust = 1, vjust = 1,
+      size = 3
+    ) +
+    theme(plot.title = element_text(size = 10),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.85))
+
+  # Export the plots to PNG files with dynamic names
+  filename1 <- paste0("images/plot1_", selected_country, ".png")
+  filename2 <- paste0("images/plot2_", selected_country, ".png")
+  filename3 <- paste0("images/plot3_", selected_country, ".png")
+
+  ggsave(filename1, stacked_area_plot, width = 6, height = 4, dpi = 300)
+  ggsave(filename2, scatter_1, width = 6, height = 4, dpi = 300)
+  ggsave(filename3, scatter_2, width = 6, height = 4, dpi = 300)
+  
+  # Store the plots in a list
+  plot_list <- list(stacked_area_plot, scatter_1, scatter_2)
+
+  # Return the list of plots
+  return(plot_list)
+}
+
+my_plots <- generate_and_export_plots(selected_country) 
+my_plots[[1]]/ (my_plots[[2]] + my_plots[[3]])
+```
 
 # Details
 
--   Who did you collaborate with: TYPE NAMES HERE
--   Approximately how much time did you spend on this problem set: ANSWER HERE
--   What, if anything, gave you the most trouble: ANSWER HERE
-
-**Please seek out help when you need it,** and remember the [15-minute rule](https://dsb2023.netlify.app/syllabus/#the-15-minute-rule){target="_blank"}. You know enough R (and have enough examples of code from class and your readings) to be able to do this. If you get stuck, ask for help from others, post a question on Slack-- and remember that I am here to help too!
-
-> As a true test to yourself, do you understand the code you submitted and are you able to explain it to someone else?
-
-# Rubric
-
-13/13: Problem set is 100% completed. Every question was attempted and answered, and most answers are correct. Code is well-documented (both self-documented and with additional comments as necessary). Used tidyverse, instead of base R. Graphs and tables are properly labelled. Analysis is clear and easy to follow, either because graphs are labeled clearly or you've written additional text to describe how you interpret the output. Multiple Github commits. Work is exceptional. I will not assign these often.
-
-8/13: Problem set is 60--80% complete and most answers are correct. This is the expected level of performance. Solid effort. Hits all the elements. No clear mistakes. Easy to follow (both the code and the output). A few Github commits.
-
-5/13: Problem set is less than 60% complete and/or most answers are incorrect. This indicates that you need to improve next time. I will hopefully not assign these often. Displays minimal effort. Doesn't complete all components. Code is poorly written and not documented. Uses the same type of plot for each graph, or doesn't use plots appropriate for the variables being analyzed. No Github commits.
+-   Approximately how much time did you spend on this problem set: 8 hours, it took a long time
